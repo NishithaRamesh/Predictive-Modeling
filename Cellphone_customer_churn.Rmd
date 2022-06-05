@@ -1,0 +1,756 @@
+---
+title: "Cellphone Customer Churn Prediction"
+output: html_notebook
+---
+
+
+Loading the Dataset
+```{r}
+library(readxl)
+Cellphone <- read_excel("D:/GL_PGP/Assignments/Logistic Regression/Cellphone.xlsx", 
+    sheet = "Data")
+View(Cellphone)
+```
+
+
+Libraries needed
+```{r}
+library(readxl)
+library(psych)
+library(dplyr)
+library(tidyverse)
+library(DataExplorer)
+library(ggplot2)
+library(esquisse)
+library(corrplot)
+library(blorr)
+library(car)
+library(caret)
+library(ROCR)
+
+```
+
+
+
+Basic Info
+```{r}
+head(Cellphone)
+tail(Cellphone)
+str(Cellphone)
+summary(Cellphone)
+```
+
+
+```{r}
+library(psych)
+library(dplyr)
+describe(Cellphone)
+glimpse(Cellphone)
+```
+
+
+Check for NA values
+```{r}
+
+anyNA(Cellphone)
+sum(is.na(Cellphone))
+colSums(is.na(Cellphone))
+```
+
+
+```{r}
+library(tidyverse)
+Cellphone %>% map(~ sum(is.na(.)))
+```
+
+
+```{r}
+Cellphone_num = Cellphone
+```
+
+
+Converting 'Churn', 'Contract Renewal' and 'Data Plan' to factors and adding levels
+```{r}
+
+Cellphone$Churn = as.factor(Cellphone$Churn)
+levels(Cellphone$Churn) = c("No","Yes")
+Cellphone$ContractRenewal = as.factor(Cellphone$ContractRenewal)
+levels(Cellphone$ContractRenewal) = c("No", "Yes")
+Cellphone$DataPlan = as.factor(Cellphone$DataPlan)
+levels(Cellphone$DataPlan) = c("No", "Yes")
+
+
+summary(Cellphone)
+
+```
+
+
+```{r}
+library(DataExplorer)
+library(ggplot2)
+library(esquisse)
+
+create_report(Cellphone)
+```
+
+
+Exploratory Data Analysis
+Churn
+
+```{r}
+prop.table(table(Cellphone$Churn))
+```
+
+```{r}
+#esquisser()
+
+ggplot(Cellphone) +
+ aes(x = Churn) +
+ geom_bar(fill = "#ed7953") +
+ theme_minimal()
+```
+
+
+```{r}
+
+plot_boxplot(Cellphone, by = "Churn", 
+             geom_boxplot_args = list("outlier.color" = "red"))
+
+```
+
+
+
+Accounts Week
+```{r}
+ggplot(Cellphone) +
+ aes(x = AccountWeeks, colour = Churn) +
+ geom_histogram(bins = 30L, fill = "#0c4c8a") +
+ scale_color_hue() +
+ theme_minimal()
+```
+
+```{r}
+ActWeeks <- cut(Cellphone$AccountWeeks, breaks = seq(0, 250, by = 25))
+ggplot(Cellphone, aes(ActWeeks, fill = Churn)) + geom_bar(position="dodge")
+```
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = AccountWeeks, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = AccountWeeks) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+
+```
+
+
+Contract Renewal
+```{r}
+ggplot(Cellphone, aes(ContractRenewal, fill = Churn)) + geom_bar(position="dodge")
+```
+
+
+
+
+Data Plan
+```{r}
+ggplot(Cellphone, aes(DataPlan, fill = Churn)) + geom_bar(position="dodge")
+```
+
+
+
+Data Usage
+```{r}
+ggplot(Cellphone) +
+ aes(y = DataUsage) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+
+
+```{r}
+#esquisser()
+ggplot(Cellphone) +
+ aes(y = DataUsage, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+
+Customer Service Callls
+```{r}
+ggplot(Cellphone) +
+ aes(y = CustServCalls) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = CustServCalls, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+
+Day Minutes
+```{r}
+ggplot(Cellphone) +
+ aes(y = DayMins) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = DayMins, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+
+Day Calls
+```{r}
+ggplot(Cellphone) +
+ aes(y = DayCalls) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = DayCalls, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+
+Monthly Charge
+```{r}
+ggplot(Cellphone) +
+ aes(y = MonthlyCharge) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = MonthlyCharge, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+Overage Fee
+```{r}
+ggplot(Cellphone) +
+ aes(y = OverageFee) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = OverageFee, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+Roaming Minutes
+```{r}
+ggplot(Cellphone) +
+ aes(y = RoamMins) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+```
+
+
+```{r}
+ggplot(Cellphone) +
+ aes(y = RoamMins, fill = Churn) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ theme_minimal()
+```
+
+
+
+Correlation Check
+```{r}
+library(corrplot)
+corrplot(cor(Cellphone_num))
+corrplot(cor(Cellphone_num), type = "lower", method = "number")
+```
+
+
+
+
+Splitting the data for Train & Test
+
+```{r}
+numrow=nrow(Cellphone)
+set.seed(1025)
+
+split=sample(seq_len(numrow),ceiling(.7*numrow),replace=F)
+train = Cellphone[split,]
+test = Cellphone[-split,]
+
+dim(train)
+dim(test)
+```
+
+
+
+```{r}
+Model1 <- glm(Churn ~., data=train, family = binomial)
+summary(Model1)
+```
+
+```{r}
+library(blorr)
+
+Model2 = blorr::blr_step_aic_both(Model1)
+Model2$model
+
+```
+
+
+```{r}
+Model3 <- glm(Churn ~ CustServCalls + ContractRenewal+ DataPlan + MonthlyCharge + DataUsage + RoamMins, data=train, family = binomial)
+summary(Model3)
+```
+
+```{r}
+library(car)
+vif(Model1)
+```
+
+
+
+```{r}
+vif(Model3)
+```
+
+
+```{r}
+library(caret)
+pred_1 <- predict(Model1, newdata = train, type = 'response')
+table(train$Churn, pred_1>0.5)
+
+glm.pred_1 = rep("No", length(pred_1))
+glm.pred_1[pred_1 > 0.5] = "Yes"
+glm.pred_1 <- as.factor(glm.pred_1)
+
+confusionMatrix(glm.pred_1, train$Churn, positive = "Yes")
+```
+
+
+```{r}
+
+pred_2 <- predict(Model3, newdata = train, type = 'response')
+table(train$Churn, pred_2>0.5)
+
+glm.pred_2 = rep("No", length(pred_2))
+glm.pred_2[pred_2 > 0.5] = "Yes"
+glm.pred_2 <- as.factor(glm.pred_2)
+
+confusionMatrix(glm.pred_2, train$Churn, positive = "Yes")
+```
+
+```{r}
+prop.table(table(train$Churn))
+```
+
+
+
+Since there is a huge class imbalance, the sensitivity of the model is very less. Let is try some sampling techniques to improve the sensitivity
+
+```{r}
+control1 = trainControl(method = "repeatedcv", number = 5, repeats = 3, sampling = "up", set.seed(1200))
+Model4 = train(Churn ~ ., data = train, method = 'glm', trControl = control1, set.seed(2111))
+Model4 
+
+
+pred_3 = predict(Model4, newdata = train)
+table(train$Churn, pred_3)
+
+
+
+confusionMatrix(pred_3, train$Churn, positive = "Yes")
+```
+
+
+```{r}
+control2 = trainControl(method = "repeatedcv", number = 5, repeats = 3, sampling = "smote", set.seed(1200))
+Model5 = train(Churn ~ ., data = train, method = 'glm', trControl = control2, set.seed(1502))
+Model5 
+
+
+pred_4 = predict(Model5, newdata = train)
+table(train$Churn, pred_4)
+
+
+
+confusionMatrix(pred_4, train$Churn, positive = "Yes")
+```
+
+
+
+```{r}
+control3 = trainControl(method = "repeatedcv", number = 5, repeats = 3, sampling = "up", set.seed(1200))
+Model6 = train(Churn ~ CustServCalls + ContractRenewal+ DataPlan + MonthlyCharge + DataUsage + RoamMins, data = train, method = 'glm', trControl = control3, set.seed(1502))
+Model6 
+
+
+pred_5 = predict(Model6, newdata = train)
+table(train$Churn, pred_5)
+
+
+
+confusionMatrix(pred_5, train$Churn, positive = "Yes")
+```
+
+
+```{r}
+control4 = trainControl(method = "repeatedcv", number = 5, repeats = 3, sampling = "smote", set.seed(1200))
+Model7 = train(Churn ~ CustServCalls + ContractRenewal+ DataPlan + MonthlyCharge + DataUsage + RoamMins, data = train, method = 'glm', trControl = control4, set.seed(1502))
+Model7 
+
+
+pred_6 = predict(Model7, newdata = train)
+table(train$Churn, pred_6)
+
+
+
+confusionMatrix(pred_6, train$Churn, positive = "Yes")
+```
+
+
+
+Model Performance - Confusion Matrix on Train Data
+```{r}
+pred_train_1 = predict(Model4, newdata = train)
+table(as.factor(train$Churn),pred_train_1)
+
+pred_train1=with(train,table(as.factor(train$Churn),pred_train_1))
+pred_train1
+
+TN_train1 = pred_train1[1,1]
+TP_train1 = pred_train1[2,2]
+FN_train1 = pred_train1[2,1]
+FP_train1 = pred_train1[1,2]
+
+train_acc1 = (TN_train1+TP_train1)/(TN_train1+TP_train1+FN_train1+FP_train1)
+train_acc1
+
+train_sens1 = TP_train1/(TP_train1+FN_train1)
+train_sens1
+
+
+train_spec1 = TN_train1/(TN_train1+FP_train1)
+train_spec1
+```
+
+```{r}
+pred_train_2 = predict(Model5, newdata = train)
+table(as.factor(train$Churn),pred_train_2)
+
+
+pred_train2=with(train,table(as.factor(train$Churn),pred_train_2))
+pred_train2
+
+TN_train2 = pred_train2[1,1]
+TP_train2 = pred_train2[2,2]
+FN_train2 = pred_train2[2,1]
+FP_train2 = pred_train2[1,2]
+
+train_acc2 = (TN_train2+TP_train2)/(TN_train2+TP_train2+FN_train2+FP_train2)
+train_acc2
+
+train_sens2 = TP_train2/(TP_train2+FN_train2)
+train_sens2
+
+
+train_spec2 = TN_train2/(TN_train2+FP_train2)
+train_spec2
+```
+
+```{r}
+pred_train_3 = predict(Model6, newdata = train)
+table(as.factor(train$Churn),pred_train_3)
+
+pred_train3=with(train,table(as.factor(train$Churn),pred_train_3))
+pred_train3
+
+TN_train3 = pred_train3[1,1]
+TP_train3 = pred_train3[2,2]
+FN_train3 = pred_train3[2,1]
+FP_train3 = pred_train3[1,2]
+
+train_acc3 = (TN_train3+TP_train3)/(TN_train3+TP_train3+FN_train3+FP_train3)
+train_acc3
+
+train_sens3 = TP_train3/(TP_train3+FN_train3)
+train_sens3
+
+
+train_spec3 = TN_train3/(TN_train3+FP_train3)
+train_spec3
+```
+
+```{r}
+pred_train_4 = predict(Model7, newdata = train)
+table(as.factor(train$Churn),pred_train_4)
+
+pred_train4=with(train,table(as.factor(train$Churn),pred_train_4))
+pred_train4
+
+TN_train4 = pred_train4[1,1]
+TP_train4 = pred_train4[2,2]
+FN_train4 = pred_train4[2,1]
+FP_train4 = pred_train4[1,2]
+
+train_acc4 = (TN_train4+TP_train4)/(TN_train4+TP_train4+FN_train4+FP_train4)
+train_acc4
+
+train_sens4 = TP_train4/(TP_train4+FN_train4)
+train_sens4
+
+
+train_spec4 = TN_train4/(TN_train4+FP_train4)
+train_spec4
+```
+
+
+
+
+
+Prediction On Test Data
+Model Performance - Confusion Matrix on Test Data
+
+```{r}
+pred_test_1 = predict(Model4, newdata = test)
+table(as.factor(test$Churn),pred_test_1)
+
+pred_test1=with(test,table(as.factor(test$Churn),pred_test_1))
+pred_test1
+
+TN_test1 = pred_test1[1,1]
+TP_test1 = pred_test1[2,2]
+FN_test1 = pred_test1[2,1]
+FP_test1 = pred_test1[1,2]
+
+test_acc1 = (TN_test1+TP_test1)/(TN_test1+TP_test1+FN_test1+FP_test1)
+test_acc1
+
+test_sens1 = TP_test1/(TP_test1+FN_test1)
+test_sens1
+
+
+test_spec1 = TN_test1/(TN_test1+FP_test1)
+test_spec1
+```
+
+
+```{r}
+pred_test_2 = predict(Model5, newdata = test)
+table(as.factor(test$Churn),pred_test_2)
+
+
+pred_test2=with(test,table(as.factor(test$Churn),pred_test_2))
+pred_test2
+
+TN_test2 = pred_test2[1,1]
+TP_test2 = pred_test2[2,2]
+FN_test2 = pred_test2[2,1]
+FP_test2 = pred_test2[1,2]
+
+test_acc2 = (TN_test2+TP_test2)/(TN_test2+TP_test2+FN_test2+FP_test2)
+test_acc2
+
+test_sens2 = TP_test2/(TP_test2+FN_test2)
+test_sens2
+
+
+test_spec2 = TN_test2/(TN_test2+FP_test2)
+test_spec2
+```
+
+
+```{r}
+pred_test_3 = predict(Model6, newdata = test)
+table(as.factor(test$Churn),pred_test_3)
+
+pred_test3=with(test,table(as.factor(test$Churn),pred_test_3))
+pred_test3
+
+TN_test3 = pred_test3[1,1]
+TP_test3 = pred_test3[2,2]
+FN_test3 = pred_test3[2,1]
+FP_test3 = pred_test3[1,2]
+
+test_acc3 = (TN_test3+TP_test3)/(TN_test3+TP_test3+FN_test3+FP_test3)
+test_acc3
+
+test_sens3 = TP_test3/(TP_test3+FN_test3)
+test_sens3
+
+
+test_spec3 = TN_test3/(TN_test3+FP_test3)
+test_spec3
+```
+
+
+```{r}
+pred_test_4 = predict(Model7, newdata = test)
+table(as.factor(test$Churn),pred_test_4)
+
+pred_test4=with(test,table(as.factor(test$Churn),pred_test_4))
+pred_test4
+
+TN_test4 = pred_test4[1,1]
+TP_test4 = pred_test4[2,2]
+FN_test4 = pred_test4[2,1]
+FP_test4 = pred_test4[1,2]
+
+test_acc4 = (TN_test4+TP_test4)/(TN_test4+TP_test4+FN_test4+FP_test4)
+test_acc4
+
+test_sens4 = TP_test4/(TP_test4+FN_test4)
+test_sens4
+
+
+test_spec4 = TN_test4/(TN_test4+FP_test4)
+test_spec4
+```
+
+
+
+
+
+Model Performance- ROC and AUC 
+For Model 4- Up-sampling Full Model
+```{r}
+library(pROC)
+
+test$predict.score=predict(Model4,test)
+test$predict.score=predict(Model4,test, type = "prob")
+test$predict.score
+roc_obj = roc(test$Churn, test$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+
+
+```
+
+Remove predicted score before running other models
+```{r}
+
+test$predict.score = NULL
+```
+
+
+For Model 5- Smote-sampling Full Model
+```{r}
+test$predict.score=predict(Model5,test)
+test$predict.score=predict(Model5,test, type = "prob")
+test$predict.score
+roc_obj = roc(test$Churn, test$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+```
+
+Remove predicted score before running other models
+```{r}
+
+test$predict.score = NULL
+```
+
+
+For Model 6- Up-sampling Significant Variables Model
+```{r}
+test$predict.score=predict(Model6,test)
+test$predict.score=predict(Model6,test, type = "prob")
+test$predict.score
+roc_obj = roc(test$Churn, test$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+```
+
+Remove predicted score before running other models
+```{r}
+
+test$predict.score = NULL
+```
+
+
+For Model 7- Smote-sampling Significant Variables Model
+```{r}
+test$predict.score=predict(Model7,test)
+test$predict.score=predict(Model7,test, type = "prob")
+test$predict.score
+roc_obj = roc(test$Churn, test$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+```
+
+
+
+
+
+```{r}
+fram_data_frame1 = data.frame(train_acc1, train_sens1, train_spec1)
+names(fram_data_frame1) = c("ACC", "SENS", "SPEC")
+fram_data_frame2 = data.frame(train_acc2, train_sens2, train_spec2)
+names(fram_data_frame2) = c("ACC", "SENS", "SPEC")
+fram_data_frame3 = data.frame(train_acc3, train_sens3, train_spec3)
+names(fram_data_frame3) = c("ACC", "SENS", "SPEC")
+fram_data_frame4 = data.frame(train_acc4, train_sens4, train_spec4)
+names(fram_data_frame4) = c("ACC", "SENS", "SPEC")
+fram_data_frame5 = data.frame(test_acc1, test_sens1, test_spec1)
+names(fram_data_frame5) = c("ACC", "SENS", "SPEC")
+fram_data_frame6 = data.frame(test_acc2, test_sens2, test_spec2)
+names(fram_data_frame6) = c("ACC", "SENS", "SPEC")
+fram_data_frame7 = data.frame(test_acc3, test_sens3, test_spec3)
+names(fram_data_frame7) = c("ACC", "SENS", "SPEC")
+fram_data_frame8 = data.frame(test_acc4, test_sens4, test_spec4)
+names(fram_data_frame8) = c("ACC", "SENS", "SPEC")
+
+fram_fin =rbind(fram_data_frame1, fram_data_frame2,fram_data_frame3,fram_data_frame4,fram_data_frame5, fram_data_frame6,fram_data_frame7,fram_data_frame8)
+row.names(fram_fin) = c('GLM_Full_upsample_train','GLM_Full_smotesample_train','GLM_Sig_upsample_train','GLM_Sig_smotesample_train','GLM_Full_upsample_test','GLM_Full_smotesample_test','GLM_Sig_upsample_test','GLM_Sig_smotesample_test')
+fram_fin
+```
+
